@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Utilisateur {
+  id                 Int          @id @default(autoincrement())
+  email              String       @unique
+  nom                String
+  prenom             String
+  pseudo             String?      @unique
+  civilite           String
+  date_de_naissance  DateTime
+  mot_de_passe       String
+  numero_tel         String
+  photo_profil       String?
+  adresse            String
+  complement_adresse String?
+  ville              String
+  code_postal        String
+  pays               String
+  newsletter         Boolean      @default(false)
+  role               Role         @default(Citoyens)
+  statut_compte      StatutCompte @default(EnAttente)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  verifiedAt         DateTime?
+
+  incidentsSignales Incident[]     @relation("IncidentsSignales")
+  interventions     Intervention[]
+  notesDonnees      Note[]
+  profilVilain      SuperVilain?
+}
+
+model SuperVilain {
+  id          Int      @id @default(autoincrement())
+  pseudo      String   @unique
+  nom         String?
+  prenom      String?
+  specialite  String
+  secteur     String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  utilisateurId Int?         @unique
+  utilisateur   Utilisateur? @relation(fields: [utilisateurId], references: [id])
+
+  incidents IncidentVilain[]
+}
+
+model Incident {
+  id          Int      @id @default(autoincrement())
+  status      Status   @default(Signale)
+  urgence     Urgence  @default(Normale)
+  type        String
+  description String?
+  adresse     String
+  ville       String
+  code_postal String
+  pays        String
+  latitude    Float
+  longitude   Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cree_parId Int
+  cree_par   Utilisateur @relation("IncidentsSignales", fields: [cree_parId], references: [id])
+
+  interventions Intervention[]
+  vilains       IncidentVilain[]
+}
+
+model Intervention {
+  id     Int                @id @default(autoincrement())
+  statut StatutIntervention @default(En_Cours)
+  debut  DateTime           @default(now())
+  fin    DateTime?
+
+  incidentId    Int
+  incident      Incident    @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  super_herosId Int
+  super_heros   Utilisateur @relation(fields: [super_herosId], references: [id])
+
+  notes Note[]
+
+  @@unique([incidentId, super_herosId])
+}
+
+model IncidentVilain {
+  incidentId Int
+  incident   Incident    @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  vilainId   Int
+  vilain     SuperVilain @relation(fields: [vilainId], references: [id])
+  arrete     Boolean     @default(false)
+
+  @@id([incidentId, vilainId])
+}
+
+model Note {
+  id            Int      @id @default(autoincrement())
+  note          Int
+  commentaire   String?
+  reponse_heros String?
+  enLigne       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  interventionId Int
+  intervention   Intervention @relation(fields: [interventionId], references: [id], onDelete: Cascade)
+  citoyenId      Int
+  citoyen        Utilisateur  @relation(fields: [citoyenId], references: [id])
+
+  @@unique([interventionId, citoyenId])
+}
+
+enum Status {
+  Signale
+  En_Cours
+  Reussi
+  Echoue
+  Supprime
+}
+
+enum StatutIntervention {
+  En_Cours
+  Reussie
+  Echouee
+}
+
+enum Urgence {
+  Haute
+  Normale
+  Basse
+}
+
+enum Role {
+  Citoyens
+  SuperHeros
+  SuperVillains
+  Administrateurs
+}
+
+enum StatutCompte {
+  EnAttente
+  Actif
+  Desactive
+}
