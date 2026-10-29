@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "../services/prisma";
+import { trouverDoublons } from "../services/doublons";
 
 const schemaCreationIncident = z.object({
   type: z.string().min(1, "Le type est obligatoire"),
@@ -25,6 +26,8 @@ export async function creerIncident(req: Request, res: Response) {
   // La priorité est définie par un admin ou un super-héros, pas par le citoyen
   const estAdmin = res.locals.utilisateur.role === "Administrateurs";
 
+  const doublons = await trouverDoublons(donnees.latitude, donnees.longitude);
+
   const incident = await prisma.incident.create({
     data: {
       ...donnees,
@@ -33,7 +36,7 @@ export async function creerIncident(req: Request, res: Response) {
     },
   });
 
-  res.status(201).json({ incident });
+  res.status(201).json({ incident, doublons });
 }
 
 const schemaFiltresIncidents = z.object({
@@ -256,4 +259,22 @@ export async function supprimerIncident(req: Request, res: Response) {
   ]);
 
   res.status(204).send();
+}
+
+export async function listerDoublons(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ message: "L'identifiant est invalide" });
+    return;
+  }
+
+  const incident = await prisma.incident.findUnique({ where: { id } });
+  if (!incident) {
+    res.status(404).json({ message: "Incident introuvable" });
+    return;
+  }
+
+  const doublons = await trouverDoublons(incident.latitude, incident.longitude, incident.id);
+
+  res.json({ doublons });
 }
