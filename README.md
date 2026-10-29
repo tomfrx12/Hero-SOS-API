@@ -89,6 +89,7 @@ npm start
 | POST | `/auth/connexion` | `{ identifiant, mot_de_passe }` → `{ token, utilisateur }` (identifiant = email ou pseudo) |
 | GET | `/auth/me` | Utilisateur connecté (en-tête `Authorization: Bearer <token>`) |
 | GET | `/incidents/recents` | Public : les 5 derniers incidents avec vilain et héros |
+| GET | `/heros` | Public : super-héros actifs avec note moyenne et missions réussies |
 
 ## Structure
 
