@@ -35,3 +35,46 @@ export async function creerIncident(req: Request, res: Response) {
 
   res.status(201).json({ incident });
 }
+
+const schemaFiltresIncidents = z.object({
+  status: z.enum(["Signale", "En_Cours", "Reussi", "Echoue", "Supprime"], "Le statut est invalide").optional(),
+  ville: z.string().optional(),
+  urgence: z.enum(["Haute", "Normale", "Basse"], "La priorité est invalide").optional(),
+});
+
+export async function listerIncidents(req: Request, res: Response) {
+  const resultat = schemaFiltresIncidents.safeParse(req.query);
+  if (!resultat.success) {
+    res.status(400).json({ message: resultat.error.issues[0].message });
+    return;
+  }
+  const { status, ville, urgence } = resultat.data;
+
+  const incidents = await prisma.incident.findMany({
+    where: {
+      // Les incidents supprimés ne s'affichent que si on les demande explicitement
+      status: status ?? { not: "Supprime" },
+      ville: ville ? { equals: ville, mode: "insensitive" } : undefined,
+      urgence,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  res.json({ incidents });
+}
+
+export async function recupererIncident(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ message: "L'identifiant est invalide" });
+    return;
+  }
+
+  const incident = await prisma.incident.findUnique({ where: { id } });
+  if (!incident) {
+    res.status(404).json({ message: "Incident introuvable" });
+    return;
+  }
+
+  res.json({ incident });
+}
