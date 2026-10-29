@@ -205,3 +205,55 @@ export async function changerUrgence(req: Request, res: Response) {
 
   res.json({ incident: incidentModifie });
 }
+
+const schemaModificationIncident = schemaCreationIncident
+  .partial()
+  .refine((donnees) => Object.keys(donnees).length > 0, "Aucun champ à modifier");
+
+export async function modifierIncident(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ message: "L'identifiant est invalide" });
+    return;
+  }
+  const resultat = schemaModificationIncident.safeParse(req.body);
+  if (!resultat.success) {
+    res.status(400).json({ message: resultat.error.issues[0].message });
+    return;
+  }
+
+  const incident = await prisma.incident.findUnique({ where: { id } });
+  if (!incident || incident.status === "Supprime") {
+    res.status(404).json({ message: "Incident introuvable" });
+    return;
+  }
+
+  const incidentModifie = await prisma.incident.update({ where: { id }, data: resultat.data });
+
+  res.json({ incident: incidentModifie });
+}
+
+export async function supprimerIncident(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ message: "L'identifiant est invalide" });
+    return;
+  }
+
+  const incident = await prisma.incident.findUnique({ where: { id } });
+  if (!incident || incident.status === "Supprime") {
+    res.status(404).json({ message: "Incident introuvable" });
+    return;
+  }
+
+  // Suppression logique : on garde l'historique et on libère les héros encore dessus
+  await prisma.$transaction([
+    prisma.intervention.updateMany({
+      where: { incidentId: id, statut: "En_Cours" },
+      data: { statut: "Echouee", fin: new Date() },
+    }),
+    prisma.incident.update({ where: { id }, data: { status: "Supprime" } }),
+  ]);
+
+  res.status(204).send();
+}

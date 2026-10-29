@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { changerUrgence, creerIncident, intervenir, terminerIntervention, listerIncidents, recupererIncident } from "../controleurs/incident.controleur";
+import { changerUrgence, creerIncident, intervenir, modifierIncident, supprimerIncident, terminerIntervention, listerIncidents, recupererIncident } from "../controleurs/incident.controleur";
 import { authentifier, autoriser } from "../middlewares/authentifier";
 
 const router = Router();
@@ -10,5 +10,7 @@ router.post("/", authentifier, autoriser("Citoyens", "Administrateurs"), creerIn
 router.post("/:id/intervention", authentifier, autoriser("SuperHeros"), intervenir);
 router.patch("/:id/intervention", authentifier, autoriser("SuperHeros"), terminerIntervention);
 router.patch("/:id/urgence", authentifier, autoriser("SuperHeros", "Administrateurs"), changerUrgence);
+router.patch("/:id", authentifier, autoriser("Administrateurs"), modifierIncident);
+router.delete("/:id", authentifier, autoriser("Administrateurs"), supprimerIncident);
 
 export default router;
