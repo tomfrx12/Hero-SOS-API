@@ -85,6 +85,9 @@ npm start
 | Méthode | Route | Description |
 |---|---|---|
 | GET | `/health` | Vérifie que l'API est opérationnelle |
+| POST | `/auth/inscription` | Crée un compte citoyen (actif) ou super-héros (en attente de validation) |
+| POST | `/auth/connexion` | `{ identifiant, mot_de_passe }` → `{ token, utilisateur }` (identifiant = email ou pseudo) |
+| GET | `/auth/me` | Utilisateur connecté (en-tête `Authorization: Bearer <token>`) |
 
 ## Structure
 
