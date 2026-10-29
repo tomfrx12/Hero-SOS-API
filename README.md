@@ -39,7 +39,6 @@ cp .env.example .env
 | `DB_PORT` | Port de la base sur ta machine (défaut: `5432`, à changer si un Postgres local l'utilise déjà) |
 | `DATABASE_URL` | URL PostgreSQL utilisée par Prisma depuis ta machine (`localhost:DB_PORT`) |
 | `JWT_SECRET` | Clé secrète pour signer les tokens JWT |
-| `JWT_EXPIRES_IN` | Durée de validité du token (ex: `7d`) |
 | `PORT` | Port d'écoute du serveur (défaut: `3000`) |
 | `NODE_ENV` | Environnement (`development` / `production`) |
 | `FRONTEND_URL` | URL du front autorisée par CORS |
