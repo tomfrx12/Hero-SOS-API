@@ -120,3 +120,54 @@ export async function intervenir(req: Request, res: Response) {
 
   res.status(201).json({ intervention });
 }
+
+const schemaFinIntervention = z.object({
+  resultat: z.enum(["Reussie", "Echouee"], "Le résultat doit être Reussie ou Echouee"),
+});
+
+export async function terminerIntervention(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ message: "L'identifiant est invalide" });
+    return;
+  }
+  const resultat = schemaFinIntervention.safeParse(req.body);
+  if (!resultat.success) {
+    res.status(400).json({ message: resultat.error.issues[0].message });
+    return;
+  }
+  const herosId = res.locals.utilisateur.id;
+
+  const intervention = await prisma.intervention.findUnique({
+    where: { incidentId_super_herosId: { incidentId: id, super_herosId: herosId } },
+  });
+  if (!intervention || intervention.statut !== "En_Cours") {
+    res.status(404).json({ message: "Aucune intervention en cours sur cet incident" });
+    return;
+  }
+
+  const interventionTerminee = await prisma.$transaction(async (tx) => {
+    const terminee = await tx.intervention.update({
+      where: { id: intervention.id },
+      data: { statut: resultat.data.resultat, fin: new Date() },
+    });
+
+    // Un succès clôt l'incident (et libère les autres héros) ; un échec seulement si plus aucun héros n'est dessus
+    if (resultat.data.resultat === "Reussie") {
+      await tx.intervention.updateMany({
+        where: { incidentId: id, statut: "En_Cours" },
+        data: { statut: "Reussie", fin: new Date() },
+      });
+      await tx.incident.update({ where: { id }, data: { status: "Reussi" } });
+    } else {
+      const autresEnCours = await tx.intervention.count({ where: { incidentId: id, statut: "En_Cours" } });
+      if (autresEnCours === 0) {
+        await tx.incident.update({ where: { id }, data: { status: "Echoue" } });
+      }
+    }
+
+    return terminee;
+  });
+
+  res.json({ intervention: interventionTerminee });
+}
