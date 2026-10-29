@@ -90,6 +90,7 @@ npm start
 | GET | `/auth/me` | Utilisateur connecté (en-tête `Authorization: Bearer <token>`) |
 | GET | `/incidents/recents` | Public : les 5 derniers incidents avec vilain et héros |
 | GET | `/heros` | Public : super-héros actifs avec note moyenne et missions réussies |
+| GET | `/stats` | Public : héros actifs, incidents signalés, taux de réussite, temps moyen |
 
 ## Structure
 

@@ -5,6 +5,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth.routes";
 import incidentRoutes from "./routes/incident.routes";
 import herosRoutes from "./routes/heros.routes";
+import statsRoutes from "./routes/stats.routes";
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -19,6 +20,7 @@ app.get("/health", (_req, res) => {
 app.use("/auth", authRoutes);
 app.use("/incidents", incidentRoutes);
 app.use("/heros", herosRoutes);
+app.use("/stats", statsRoutes);
 
 app.use((erreur: unknown, _req: Request, res: Response, _next: NextFunction) => {
   console.error(erreur);
