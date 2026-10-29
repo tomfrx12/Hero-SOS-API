@@ -171,3 +171,37 @@ export async function terminerIntervention(req: Request, res: Response) {
 
   res.json({ intervention: interventionTerminee });
 }
+
+const schemaUrgence = z.object({
+  urgence: z.enum(["Haute", "Normale", "Basse"], "La priorité doit être Haute, Normale ou Basse"),
+});
+
+export async function changerUrgence(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ message: "L'identifiant est invalide" });
+    return;
+  }
+  const resultat = schemaUrgence.safeParse(req.body);
+  if (!resultat.success) {
+    res.status(400).json({ message: resultat.error.issues[0].message });
+    return;
+  }
+
+  const incident = await prisma.incident.findUnique({ where: { id } });
+  if (!incident) {
+    res.status(404).json({ message: "Incident introuvable" });
+    return;
+  }
+  if (incident.status !== "Signale" && incident.status !== "En_Cours") {
+    res.status(409).json({ message: "La priorité d'un incident clôturé ne peut plus être modifiée" });
+    return;
+  }
+
+  const incidentModifie = await prisma.incident.update({
+    where: { id },
+    data: { urgence: resultat.data.urgence },
+  });
+
+  res.json({ incident: incidentModifie });
+}
