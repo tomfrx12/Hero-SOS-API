@@ -78,3 +78,45 @@ export async function recupererIncident(req: Request, res: Response) {
 
   res.json({ incident });
 }
+
+export async function intervenir(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ message: "L'identifiant est invalide" });
+    return;
+  }
+  const herosId = res.locals.utilisateur.id;
+
+  const incident = await prisma.incident.findUnique({ where: { id } });
+  if (!incident) {
+    res.status(404).json({ message: "Incident introuvable" });
+    return;
+  }
+  if (incident.status !== "Signale" && incident.status !== "En_Cours") {
+    res.status(409).json({ message: "Cet incident n'est plus ouvert aux interventions" });
+    return;
+  }
+
+  const interventionEnCours = await prisma.intervention.findFirst({
+    where: { super_herosId: herosId, statut: "En_Cours" },
+  });
+  if (interventionEnCours) {
+    res.status(409).json({ message: "Vous avez déjà une intervention en cours" });
+    return;
+  }
+
+  const dejaIntervenu = await prisma.intervention.findUnique({
+    where: { incidentId_super_herosId: { incidentId: id, super_herosId: herosId } },
+  });
+  if (dejaIntervenu) {
+    res.status(409).json({ message: "Vous êtes déjà intervenu sur cet incident" });
+    return;
+  }
+
+  const [intervention] = await prisma.$transaction([
+    prisma.intervention.create({ data: { incidentId: id, super_herosId: herosId } }),
+    prisma.incident.update({ where: { id }, data: { status: "En_Cours" } }),
+  ]);
+
+  res.status(201).json({ intervention });
+}
