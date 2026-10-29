@@ -19,6 +19,8 @@ const schemaInscription = z.object({
   ville: z.string().min(1, "La ville est obligatoire"),
   code_postal: z.string().min(1, "Le code postal est obligatoire"),
   pays: z.string().min(1, "Le pays est obligatoire"),
+  latitude: z.number("Choisis ton adresse dans la liste"),
+  longitude: z.number("Choisis ton adresse dans la liste"),
   mot_de_passe: z.string().min(8, "Le mot de passe doit faire au moins 8 caractères"),
 });
 
