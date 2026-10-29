@@ -88,6 +88,7 @@ npm start
 | POST | `/auth/inscription` | Crée un compte citoyen (actif) ou super-héros (en attente de validation) |
 | POST | `/auth/connexion` | `{ identifiant, mot_de_passe }` → `{ token, utilisateur }` (identifiant = email ou pseudo) |
 | GET | `/auth/me` | Utilisateur connecté (en-tête `Authorization: Bearer <token>`) |
+| GET | `/incidents/recents` | Public : les 5 derniers incidents avec vilain et héros |
 
 ## Structure
 

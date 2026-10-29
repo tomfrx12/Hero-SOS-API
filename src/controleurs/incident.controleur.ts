@@ -66,6 +66,27 @@ export async function listerIncidents(req: Request, res: Response) {
   res.json({ incidents });
 }
 
+// Les 5 derniers incidents pour les "Alertes en direct" de l'accueil
+export async function incidentsRecents(_req: Request, res: Response) {
+  const incidents = await prisma.incident.findMany({
+    where: { status: { not: "Supprime" } },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    select: {
+      id: true,
+      type: true,
+      status: true,
+      urgence: true,
+      adresse: true,
+      createdAt: true,
+      vilains: { select: { vilain: { select: { pseudo: true } } } },
+      interventions: { select: { debut: true, fin: true, super_heros: { select: { pseudo: true } } } },
+    },
+  });
+
+  res.json({ incidents });
+}
+
 export async function recupererIncident(req: Request, res: Response) {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) {

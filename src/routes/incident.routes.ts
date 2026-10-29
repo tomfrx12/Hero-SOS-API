@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { changerUrgence, creerIncident, intervenir, listerDoublons, modifierIncident, supprimerIncident, terminerIntervention, listerIncidents, recupererIncident } from "../controleurs/incident.controleur";
+import { changerUrgence, creerIncident, incidentsRecents, intervenir, listerDoublons, modifierIncident, supprimerIncident, terminerIntervention, listerIncidents, recupererIncident } from "../controleurs/incident.controleur";
 import { authentifier, autoriser } from "../middlewares/authentifier";
 
 const router = Router();
 
 router.get("/", authentifier, listerIncidents);
+router.get("/recents", incidentsRecents);
 router.get("/:id/doublons", authentifier, autoriser("Administrateurs"), listerDoublons);
 router.get("/:id", authentifier, recupererIncident);
 router.post("/", authentifier, autoriser("Citoyens", "Administrateurs"), creerIncident);
