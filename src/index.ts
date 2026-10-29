@@ -3,6 +3,7 @@ dotenv.config();
 import express, { type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.routes";
+import incidentRoutes from "./routes/incident.routes";
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -15,6 +16,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/auth", authRoutes);
+app.use("/incidents", incidentRoutes);
 
 app.use((erreur: unknown, _req: Request, res: Response, _next: NextFunction) => {
   console.error(erreur);
