@@ -27,6 +27,8 @@ model Utilisateur {
   ville              String
   code_postal        String
   pays               String
+  latitude           Float?
+  longitude          Float?
   newsletter         Boolean      @default(false)
   role               Role         @default(Citoyens)
   statut_compte      StatutCompte @default(EnAttente)
