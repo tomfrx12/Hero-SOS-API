@@ -33,3 +33,30 @@ export async function statistiques(_req: Request, res: Response) {
     temps_moyen_minutes: reussies > 0 ? Math.round(totalMinutes / reussies) : null,
   });
 }
+
+// Types d'incident où des citoyens sont en danger (un vol ne compte pas)
+const typesDanger = ["Personnes en danger", "Attaque de super-vilain", "Prise d'otages"];
+
+// Statistiques globales de l'espace super-héros
+export async function statistiquesGlobales(_req: Request, res: Response) {
+  const interventions = await prisma.intervention.count();
+
+  // Un incident réussi = un citoyen secouru
+  const citoyensSecourus = await prisma.incident.count({ where: { status: "Reussi" } });
+  const citoyensEnDangerSecourus = await prisma.incident.count({
+    where: { status: "Reussi", type: { in: typesDanger } },
+  });
+
+  const vilainsIdentifies = await prisma.superVilain.count();
+  const vilainsEnPrison = await prisma.superVilain.count({
+    where: { incidents: { some: { arrete: true } } },
+  });
+
+  res.json({
+    interventions,
+    citoyens_secourus: citoyensSecourus,
+    citoyens_en_danger_secourus: citoyensEnDangerSecourus,
+    vilains_identifies: vilainsIdentifies,
+    vilains_en_prison: vilainsEnPrison,
+  });
+}
