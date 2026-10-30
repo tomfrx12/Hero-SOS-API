@@ -27,6 +27,8 @@ COPY --from=prune /app/package*.json ./
 COPY --from=prune /app/node_modules ./node_modules
 COPY --from=prune /app/dist ./dist
 
+RUN mkdir uploads && chown node:node uploads
+
 USER node
 
 CMD ["node", "dist/index.js"]

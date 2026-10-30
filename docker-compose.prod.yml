@@ -51,6 +51,8 @@ services:
       - traefik.http.routers.hero-sos-api.entrypoints=${TRAEFIK_ENTRYPOINT:?TRAEFIK_ENTRYPOINT manquant dans .env.prod}
       - traefik.http.routers.hero-sos-api.tls.certresolver=${TRAEFIK_CERTRESOLVER:?TRAEFIK_CERTRESOLVER manquant dans .env.prod}
       - traefik.http.services.hero-sos-api.loadbalancer.server.port=3000
+    volumes:
+      - uploads_data:/app/uploads
     networks:
       - web
       - traefik
@@ -81,3 +83,4 @@ networks:
 
 volumes:
   postgres_data:
+  uploads_data:
