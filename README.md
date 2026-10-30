@@ -90,6 +90,8 @@ npm start
 | GET | `/auth/me` | Utilisateur connecté (en-tête `Authorization: Bearer <token>`) |
 | GET | `/incidents/recents` | Public : les 5 derniers incidents avec vilain et héros |
 | GET | `/heros` | Public : super-héros actifs avec note moyenne et missions réussies |
+| GET | `/vilains` | Public : super-vilains avec nombre d'incidents et d'arrestations |
+| POST | `/vilains` | Admin : crée un super-vilain `{ pseudo, specialite, secteur, nom?, prenom?, description? }` |
 | GET | `/stats` | Public : héros actifs, incidents signalés, taux de réussite, temps moyen |
 
 ## Structure
