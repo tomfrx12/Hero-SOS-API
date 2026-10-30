@@ -94,6 +94,52 @@ export async function incidentsRecents(_req: Request, res: Response) {
   res.json({ incidents });
 }
 
+// Zone visible de la carte (facultative) : on ne garde que les incidents dedans
+const schemaZone = z.object({
+  nord: z.coerce.number().optional(),
+  sud: z.coerce.number().optional(),
+  est: z.coerce.number().optional(),
+  ouest: z.coerce.number().optional(),
+});
+
+// Les incidents pas encore terminés, pour la page publique avec la carte
+export async function incidentsEnCours(req: Request, res: Response) {
+  const resultat = schemaZone.safeParse(req.query);
+  if (!resultat.success) {
+    res.status(400).json({ message: "La zone de la carte est invalide" });
+    return;
+  }
+  const { nord, sud, est, ouest } = resultat.data;
+
+  const incidents = await prisma.incident.findMany({
+    where: {
+      status: { in: ["Signale", "En_Cours"] },
+      latitude: { gte: sud, lte: nord },
+      longitude: { gte: ouest, lte: est },
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      type: true,
+      status: true,
+      urgence: true,
+      description: true,
+      adresse: true,
+      ville: true,
+      latitude: true,
+      longitude: true,
+      createdAt: true,
+      vilains: { select: { vilain: { select: { pseudo: true } } } },
+      interventions: {
+        where: { statut: "En_Cours" },
+        select: { super_heros: { select: { pseudo: true } } },
+      },
+    },
+  });
+
+  res.json({ incidents });
+}
+
 const schemaPosition = z.object({
   latitude: z.coerce.number().min(-90).max(90, "La latitude est invalide"),
   longitude: z.coerce.number().min(-180).max(180, "La longitude est invalide"),
