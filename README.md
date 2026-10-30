@@ -80,6 +80,27 @@ npm run build
 npm start
 ```
 
+## Déploiement en production
+
+`docker-compose.prod.yml` lance la base, les migrations, l'API et le front derrière le Traefik du serveur. Mailpit n'est pas déployé.
+
+Sur le serveur, clone les deux dépôts côte à côte :
+
+```bash
+git clone https://github.com/tomfrx12/Hero-SOS.git
+git clone https://github.com/tomfrx12/Hero-SOS-API.git
+cd Hero-SOS-API
+cp .env.prod.example .env.prod
+```
+
+Renseigne `.env.prod` (domaines, réseau, entrypoint et certresolver de Traefik, secrets), puis fais pointer le DNS des deux domaines vers le serveur.
+
+Pour déployer, et à chaque mise à jour après un `git pull` dans les deux dépôts :
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
 ## Endpoints
 
 | Méthode | Route | Description |
