@@ -248,6 +248,8 @@ export async function terminerIntervention(req: Request, res: Response) {
         data: { statut: "Reussie", fin: new Date() },
       });
       await tx.incident.update({ where: { id }, data: { status: "Reussi" } });
+      // Les vilains de l'incident sont mis en prison
+      await tx.incidentVilain.updateMany({ where: { incidentId: id }, data: { arrete: true } });
     } else {
       const autresEnCours = await tx.intervention.count({ where: { incidentId: id, statut: "En_Cours" } });
       if (autresEnCours === 0) {
