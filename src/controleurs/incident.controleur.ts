@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "../services/prisma";
 import { trouverDoublons } from "../services/doublons";
+import { emailsDuRole, envoyerMail } from "../services/mail";
 
 const schemaCreationIncident = z.object({
   type: z.string().min(1, "Le type est obligatoire"),
@@ -35,6 +36,12 @@ export async function creerIncident(req: Request, res: Response) {
       cree_parId: res.locals.utilisateur.id,
     },
   });
+
+  await envoyerMail(
+    await emailsDuRole("Administrateurs", "SuperHeros"),
+    `Nouvel incident : ${incident.type}`,
+    `Un incident "${incident.type}" vient d'être signalé au ${incident.adresse}, ${incident.code_postal} ${incident.ville}.`,
+  );
 
   res.status(201).json({ incident, doublons });
 }
@@ -142,6 +149,13 @@ export async function intervenir(req: Request, res: Response) {
     prisma.incident.update({ where: { id }, data: { status: "En_Cours" } }),
   ]);
 
+  const heros = await prisma.utilisateur.findUnique({ where: { id: herosId } });
+  await envoyerMail(
+    await emailsDuRole("Administrateurs"),
+    `Incident pris en charge : ${incident.type}`,
+    `${heros?.pseudo} intervient sur l'incident "${incident.type}" au ${incident.adresse}, ${incident.ville}.`,
+  );
+
   res.status(201).json({ intervention });
 }
 
@@ -192,6 +206,17 @@ export async function terminerIntervention(req: Request, res: Response) {
 
     return terminee;
   });
+
+  // On prévient le citoyen seulement si l'incident est terminé (réussi, ou échoué sans autre héros dessus)
+  const incident = await prisma.incident.findUnique({ where: { id }, include: { cree_par: true } });
+  if (incident && (incident.status === "Reussi" || incident.status === "Echoue")) {
+    const issue = incident.status === "Reussi" ? "a été résolu" : "n'a pas pu être résolu";
+    await envoyerMail(
+      [incident.cree_par.email],
+      `Votre incident ${issue}`,
+      `L'incident "${incident.type}" que vous avez signalé au ${incident.adresse} ${issue}.\n\nVous pouvez noter le super-héros depuis votre profil : ${process.env.FRONTEND_URL}/profil/incidents`,
+    );
+  }
 
   res.json({ intervention: interventionTerminee });
 }
@@ -246,13 +271,19 @@ export async function modifierIncident(req: Request, res: Response) {
     return;
   }
 
-  const incident = await prisma.incident.findUnique({ where: { id } });
+  const incident = await prisma.incident.findUnique({ where: { id }, include: { cree_par: true } });
   if (!incident || incident.status === "Supprime") {
     res.status(404).json({ message: "Incident introuvable" });
     return;
   }
 
   const incidentModifie = await prisma.incident.update({ where: { id }, data: resultat.data });
+
+  await envoyerMail(
+    [incident.cree_par.email],
+    "Votre incident a été modifié",
+    `Un modérateur a modifié l'incident "${incidentModifie.type}" que vous avez signalé au ${incidentModifie.adresse}.`,
+  );
 
   res.json({ incident: incidentModifie });
 }
@@ -264,7 +295,7 @@ export async function supprimerIncident(req: Request, res: Response) {
     return;
   }
 
-  const incident = await prisma.incident.findUnique({ where: { id } });
+  const incident = await prisma.incident.findUnique({ where: { id }, include: { cree_par: true } });
   if (!incident || incident.status === "Supprime") {
     res.status(404).json({ message: "Incident introuvable" });
     return;
@@ -278,6 +309,12 @@ export async function supprimerIncident(req: Request, res: Response) {
     }),
     prisma.incident.update({ where: { id }, data: { status: "Supprime" } }),
   ]);
+
+  await envoyerMail(
+    [incident.cree_par.email],
+    "Votre incident a été supprimé",
+    `Un modérateur a supprimé l'incident "${incident.type}" que vous avez signalé au ${incident.adresse}.`,
+  );
 
   res.status(204).send();
 }

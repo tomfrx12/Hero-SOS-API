@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import { z } from "zod";
 import { prisma } from "../services/prisma";
 import { creerToken } from "../services/token";
+import { emailsDuRole, envoyerMail } from "../services/mail";
 
 const schemaInscription = z.object({
   role: z.enum(["Citoyens", "SuperHeros"]),
@@ -68,6 +69,12 @@ export async function inscription(req: Request, res: Response) {
       statut_compte: donnees.role === "SuperHeros" ? "EnAttente" : "Actif",
     },
   });
+
+  await envoyerMail(
+    await emailsDuRole("Administrateurs"),
+    "Nouvel inscrit sur Héros SOS",
+    `${utilisateur.prenom} ${utilisateur.nom} (${utilisateur.email}) vient de s'inscrire en tant que ${utilisateur.role}.`,
+  );
 
   res.status(201).json({ utilisateur: sansMotDePasse(utilisateur) });
 }
