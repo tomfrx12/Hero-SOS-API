@@ -178,7 +178,13 @@ export async function noterHeros(req: Request, res: Response) {
 export async function mesStatistiques(_req: Request, res: Response) {
   const interventions = await prisma.intervention.findMany({
     where: { super_herosId: res.locals.utilisateur.id },
-    select: { statut: true, debut: true, fin: true, notes: { where: { enLigne: true }, select: { note: true } } },
+    select: {
+      statut: true,
+      debut: true,
+      fin: true,
+      notes: { where: { enLigne: true }, select: { note: true } },
+      incident: { select: { vilains: { select: { arrete: true } } } },
+    },
   });
 
   let reussies = 0;
@@ -187,6 +193,7 @@ export async function mesStatistiques(_req: Request, res: Response) {
   let totalMinutes = 0;
   let totalNotes = 0;
   let nombreAvis = 0;
+  let vilainsArretes = 0;
 
   for (const intervention of interventions) {
     if (intervention.statut === "En_Cours") enCours++;
@@ -198,6 +205,9 @@ export async function mesStatistiques(_req: Request, res: Response) {
     for (const avis of intervention.notes) {
       totalNotes += avis.note;
       nombreAvis++;
+    }
+    for (const lien of intervention.incident.vilains) {
+      if (intervention.statut === "Reussie" && lien.arrete) vilainsArretes++;
     }
   }
 
@@ -212,6 +222,9 @@ export async function mesStatistiques(_req: Request, res: Response) {
     temps_moyen_minutes: reussies > 0 ? Math.round(totalMinutes / reussies) : null,
     note_moyenne: nombreAvis > 0 ? totalNotes / nombreAvis : null,
     nombre_avis: nombreAvis,
+    // Un incident réussi = un citoyen secouru
+    citoyens_secourus: reussies,
+    vilains_arretes: vilainsArretes,
   });
 }
 
