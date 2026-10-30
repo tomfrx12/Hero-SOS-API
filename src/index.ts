@@ -6,6 +6,7 @@ import multer from "multer";
 import authRoutes from "./routes/auth.routes";
 import incidentRoutes from "./routes/incident.routes";
 import herosRoutes from "./routes/heros.routes";
+import vilainsRoutes from "./routes/vilains.routes";
 import statsRoutes from "./routes/stats.routes";
 import moiRoutes from "./routes/moi.routes";
 
@@ -23,6 +24,7 @@ app.get("/health", (_req, res) => {
 app.use("/auth", authRoutes);
 app.use("/incidents", incidentRoutes);
 app.use("/heros", herosRoutes);
+app.use("/vilains", vilainsRoutes);
 app.use("/stats", statsRoutes);
 app.use("/moi", moiRoutes);
 
