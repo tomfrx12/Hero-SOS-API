@@ -61,7 +61,7 @@ npx prisma generate
 docker compose up --build
 ```
 
-L'API sera disponible sur `http://localhost:3000`, PostgreSQL sur le port `5432` (ou `DB_PORT`) et Adminer sur `http://localhost:8080`.
+L'API sera disponible sur `http://localhost:3000`, PostgreSQL sur le port `5432` (ou `DB_PORT`).
 
 Pour se connecter à la base avec un client (TablePlus, DBeaver…) : hôte `127.0.0.1`, port `DB_PORT`, et les `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` de ton `.env`.
 

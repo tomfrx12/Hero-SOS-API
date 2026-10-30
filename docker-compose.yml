@@ -11,13 +11,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  adminer:
-    image: adminer
+  mailpit:
+    image: axllent/mailpit
     restart: unless-stopped
-    depends_on:
-      - db
     ports:
-      - "8080:8080"
+      - "8025:8025"
+      - "1025:1025"
 
   api:
     build:
@@ -26,10 +25,13 @@ services:
     restart: unless-stopped
     depends_on:
       - db
+      - mailpit
     ports:
       - "${PORT:-3000}:3000"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
     env_file:
       - .env
     volumes:
