@@ -14,6 +14,8 @@ generator client {
 model Utilisateur {
   id                 Int          @id @default(autoincrement())
   email              String       @unique
+  // Nouvel email demandé depuis le profil, appliqué quand un administrateur le valide
+  email_en_attente   String?
   nom                String
   prenom             String
   pseudo             String?      @unique
