@@ -94,6 +94,24 @@ export async function incidentsRecents(_req: Request, res: Response) {
   res.json({ incidents });
 }
 
+const schemaPosition = z.object({
+  latitude: z.coerce.number().min(-90).max(90, "La latitude est invalide"),
+  longitude: z.coerce.number().min(-180).max(180, "La longitude est invalide"),
+});
+
+// Les incidents ouverts autour d'un point, pour prévenir le citoyen avant qu'il signale un doublon
+export async function incidentsProches(req: Request, res: Response) {
+  const resultat = schemaPosition.safeParse(req.query);
+  if (!resultat.success) {
+    res.status(400).json({ message: resultat.error.issues[0].message });
+    return;
+  }
+
+  const incidents = await trouverDoublons(resultat.data.latitude, resultat.data.longitude);
+
+  res.json({ incidents });
+}
+
 export async function recupererIncident(req: Request, res: Response) {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) {
