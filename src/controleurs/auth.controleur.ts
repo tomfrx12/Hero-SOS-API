@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import type { Utilisateur } from "@prisma/client";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import { z } from "zod";
 import { prisma } from "../services/prisma";
 import { creerToken } from "../services/token";
@@ -119,4 +120,68 @@ export async function me(_req: Request, res: Response) {
   }
 
   res.json({ utilisateur: sansMotDePasse(utilisateur) });
+}
+
+const schemaMotDePasseOublie = z.object({
+  email: z.email("L'adresse email est invalide"),
+});
+
+export async function motDePasseOublie(req: Request, res: Response) {
+  const resultat = schemaMotDePasseOublie.safeParse(req.body);
+  if (!resultat.success) {
+    res.status(400).json({ message: resultat.error.issues[0].message });
+    return;
+  }
+
+  const utilisateur = await prisma.utilisateur.findUnique({ where: { email: resultat.data.email } });
+
+  if (utilisateur) {
+    const token = crypto.randomBytes(32).toString("hex");
+    await prisma.reinitialisationMotDePasse.create({
+      data: {
+        token,
+        expireLe: new Date(Date.now() + 60 * 60 * 1000), // valable 1 heure
+        utilisateurId: utilisateur.id,
+      },
+    });
+
+    await envoyerMail(
+      [utilisateur.email],
+      "Réinitialisation de votre mot de passe",
+      `Bonjour ${utilisateur.prenom},\n\nPour choisir un nouveau mot de passe, ouvrez ce lien (valable 1 heure) :\n${process.env.FRONTEND_URL}/reinitialiser-le-mot-de-passe?token=${token}\n\nSi vous n'avez rien demandé, ignorez ce mail.`,
+    );
+  }
+
+  // Même réponse que le compte existe ou non, pour ne pas révéler quels emails sont inscrits
+  res.json({ message: "Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé." });
+}
+
+const schemaReinitialisation = z.object({
+  token: z.string().min(1, "Le lien est invalide"),
+  mot_de_passe: z.string().min(8, "Le mot de passe doit faire au moins 8 caractères"),
+});
+
+export async function reinitialiserMotDePasse(req: Request, res: Response) {
+  const resultat = schemaReinitialisation.safeParse(req.body);
+  if (!resultat.success) {
+    res.status(400).json({ message: resultat.error.issues[0].message });
+    return;
+  }
+  const { token, mot_de_passe } = resultat.data;
+
+  const demande = await prisma.reinitialisationMotDePasse.findUnique({ where: { token } });
+  if (!demande || demande.expireLe < new Date()) {
+    res.status(400).json({ message: "Ce lien n'est plus valide, refais une demande" });
+    return;
+  }
+
+  await prisma.utilisateur.update({
+    where: { id: demande.utilisateurId },
+    data: { mot_de_passe: await bcrypt.hash(mot_de_passe, 10) },
+  });
+
+  // Un lien ne sert qu'une fois : on supprime toutes les demandes de cet utilisateur
+  await prisma.reinitialisationMotDePasse.deleteMany({ where: { utilisateurId: demande.utilisateurId } });
+
+  res.json({ message: "Ton mot de passe a été modifié, tu peux te connecter." });
 }

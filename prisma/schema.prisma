@@ -40,6 +40,17 @@ model Utilisateur {
   interventions     Intervention[]
   notesDonnees      Note[]
   profilVilain      SuperVilain?
+  reinitialisations ReinitialisationMotDePasse[]
+}
+
+// Lien envoyé par mail quand l'utilisateur a oublié son mot de passe
+model ReinitialisationMotDePasse {
+  id       Int      @id @default(autoincrement())
+  token    String   @unique
+  expireLe DateTime
+
+  utilisateurId Int
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
 }
 
 model SuperVilain {
