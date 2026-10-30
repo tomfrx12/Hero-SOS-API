@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { me } from "../controleurs/auth.controleur";
-import { changerMotDePasse, changerPhoto, demanderChangementEmail, maReputation, mesIncidents, mesStatistiques, modifierProfil, noterHeros, repondreAvis } from "../controleurs/moi.controleur";
+import { changerMotDePasse, changerPhoto, demanderChangementEmail, maReputation, mesIncidents, mesInterventions, mesStatistiques, modifierProfil, noterHeros, repondreAvis } from "../controleurs/moi.controleur";
 import { authentifier, autoriser } from "../middlewares/authentifier";
 import { uploadPhoto } from "../services/upload";
 
@@ -21,6 +21,7 @@ router.post("/notes", autoriser("Citoyens", "Administrateurs"), noterHeros);
 
 // Espace super-héros
 router.get("/statistiques", autoriser("SuperHeros"), mesStatistiques);
+router.get("/interventions", autoriser("SuperHeros"), mesInterventions);
 router.get("/reputation", autoriser("SuperHeros"), maReputation);
 router.patch("/notes/:id/reponse", autoriser("SuperHeros"), repondreAvis);
 

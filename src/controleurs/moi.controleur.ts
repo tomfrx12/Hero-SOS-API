@@ -228,6 +228,33 @@ export async function mesStatistiques(_req: Request, res: Response) {
   });
 }
 
+// Les interventions du super-héros connecté, la plus récente en premier
+export async function mesInterventions(_req: Request, res: Response) {
+  const interventions = await prisma.intervention.findMany({
+    where: { super_herosId: res.locals.utilisateur.id },
+    orderBy: { debut: "desc" },
+    select: {
+      id: true,
+      statut: true,
+      debut: true,
+      fin: true,
+      incident: {
+        select: {
+          id: true,
+          type: true,
+          urgence: true,
+          description: true,
+          adresse: true,
+          ville: true,
+          vilains: { select: { vilain: { select: { pseudo: true } } } },
+        },
+      },
+    },
+  });
+
+  res.json({ interventions });
+}
+
 // Les avis laissés par les citoyens sur les interventions du héros connecté
 export async function maReputation(_req: Request, res: Response) {
   const notes = await prisma.note.findMany({
