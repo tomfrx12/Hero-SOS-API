@@ -31,7 +31,7 @@ const schemaConnexion = z.object({
   mot_de_passe: z.string().min(1, "Le mot de passe est obligatoire"),
 });
 
-function sansMotDePasse(utilisateur: Utilisateur) {
+export function sansMotDePasse(utilisateur: Utilisateur) {
   const { mot_de_passe, ...reste } = utilisateur;
   return reste;
 }
