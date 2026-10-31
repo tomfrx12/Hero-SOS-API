@@ -43,6 +43,7 @@ model Utilisateur {
   notesDonnees      Note[]
   profilVilain      SuperVilain?
   reinitialisations ReinitialisationMotDePasse[]
+  articlesEcrits    Article[]
 }
 
 model NewsletterAnonymous {
@@ -162,6 +163,19 @@ enum Urgence {
   Haute
   Normale
   Basse
+}
+
+model Article {
+  id           Int      @id @default(autoincrement())
+  titre        String
+  contenu_html String
+  image        String?
+  publie       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  auteurId Int
+  auteur   Utilisateur @relation(fields: [auteurId], references: [id])
 }
 
 enum Role {
