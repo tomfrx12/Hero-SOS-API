@@ -71,6 +71,20 @@ export async function inscription(req: Request, res: Response) {
     },
   });
 
+  if (utilisateur.role === "Citoyens") {
+    await envoyerMail(
+      [utilisateur.email],
+      "Bienvenue sur Héros SOS",
+      `Bonjour ${utilisateur.prenom},\n\nTon compte a bien été créé. Tu peux maintenant te connecter sur ${process.env.FRONTEND_URL}/connexion.\n\nÀ bientôt sur Héros SOS !`,
+    );
+  } else {
+    await envoyerMail(
+      [utilisateur.email],
+      "Ta demande de super-héros est en cours d'examen",
+      `Bonjour ${utilisateur.prenom},\n\nTa demande pour rejoindre Héros SOS en tant que super-héros a bien été reçue. Un modérateur va l'examiner prochainement.\n\nTu recevras un mail dès qu'une décision aura été prise.`,
+    );
+  }
+
   await envoyerMail(
     await emailsDuRole("Administrateurs"),
     "Nouvel inscrit sur Héros SOS",
