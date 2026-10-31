@@ -45,6 +45,14 @@ model Utilisateur {
   reinitialisations ReinitialisationMotDePasse[]
 }
 
+model NewsletterAnonymous {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  actif     Boolean  @default(true)
+  token     String   @unique
+  createdAt DateTime @default(now())
+}
+
 // Lien envoyé par mail quand l'utilisateur a oublié son mot de passe
 model ReinitialisationMotDePasse {
   id       Int      @id @default(autoincrement())

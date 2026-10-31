@@ -71,6 +71,14 @@ export async function inscription(req: Request, res: Response) {
     },
   });
 
+  // Si l'email était abonné anonymement, on rattache l'abonnement au nouveau compte
+  const abonneAnonyme = await prisma.newsletterAnonymous.findUnique({ where: { email: utilisateur.email } });
+  if (abonneAnonyme?.actif) {
+    await prisma.utilisateur.update({ where: { id: utilisateur.id }, data: { newsletter: true } });
+    await prisma.newsletterAnonymous.delete({ where: { email: utilisateur.email } });
+    utilisateur.newsletter = true;
+  }
+
   if (utilisateur.role === "Citoyens") {
     await envoyerMail(
       [utilisateur.email],

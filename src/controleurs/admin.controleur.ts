@@ -3,6 +3,45 @@ import { z } from "zod";
 import { prisma } from "../services/prisma";
 import { envoyerMail } from "../services/mail";
 
+const schemaEnvoiNewsletter = z.object({
+  sujet: z.string().min(1, "Le sujet est obligatoire"),
+  corps: z.string().min(1, "Le contenu est obligatoire"),
+  destinataireId: z.number().optional(),
+});
+
+export async function envoyerNewsletter(req: Request, res: Response) {
+  const resultat = schemaEnvoiNewsletter.safeParse(req.body);
+  if (!resultat.success) {
+    res.status(400).json({ message: resultat.error.issues[0].message });
+    return;
+  }
+  const { sujet, corps, destinataireId } = resultat.data;
+
+  let destinataires: string[];
+
+  if (destinataireId) {
+    const utilisateur = await prisma.utilisateur.findUnique({ where: { id: destinataireId } });
+    if (!utilisateur) {
+      res.status(404).json({ message: "Utilisateur introuvable" });
+      return;
+    }
+    destinataires = [utilisateur.email];
+  } else {
+    const inscrits = await prisma.utilisateur.findMany({
+      where: { newsletter: true, statut_compte: "Actif" },
+      select: { email: true },
+    });
+    const anonymes = await prisma.newsletterAnonymous.findMany({
+      where: { actif: true },
+      select: { email: true },
+    });
+    destinataires = [...inscrits.map((u) => u.email), ...anonymes.map((a) => a.email)];
+  }
+
+  await envoyerMail(destinataires, sujet, corps);
+  res.json({ message: `Newsletter envoyée à ${destinataires.length} destinataire(s)` });
+}
+
 const champsUtilisateur = {
   id: true,
   civilite: true,

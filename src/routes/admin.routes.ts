@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { changerVisibiliteAvis, detailIncident, detailUtilisateur, listerAvis, listerUtilisateurs, modifierUtilisateur, tableauDeBord } from "../controleurs/admin.controleur";
+import { changerVisibiliteAvis, detailIncident, detailUtilisateur, envoyerNewsletter, listerAvis, listerUtilisateurs, modifierUtilisateur, tableauDeBord } from "../controleurs/admin.controleur";
 import { authentifier, autoriser } from "../middlewares/authentifier";
 
 const router = Router();
@@ -13,5 +13,6 @@ router.patch("/utilisateurs/:id", modifierUtilisateur);
 router.get("/incidents/:id", detailIncident);
 router.get("/avis", listerAvis);
 router.patch("/avis/:id", changerVisibiliteAvis);
+router.post("/newsletter/envoyer", envoyerNewsletter);
 
 export default router;
