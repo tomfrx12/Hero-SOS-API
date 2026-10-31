@@ -9,6 +9,7 @@ import herosRoutes from "./routes/heros.routes";
 import vilainsRoutes from "./routes/vilains.routes";
 import statsRoutes from "./routes/stats.routes";
 import moiRoutes from "./routes/moi.routes";
+import adminRoutes from "./routes/admin.routes";
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -27,6 +28,7 @@ app.use("/heros", herosRoutes);
 app.use("/vilains", vilainsRoutes);
 app.use("/stats", statsRoutes);
 app.use("/moi", moiRoutes);
+app.use("/admin", adminRoutes);
 
 app.use((erreur: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (erreur instanceof multer.MulterError) {
