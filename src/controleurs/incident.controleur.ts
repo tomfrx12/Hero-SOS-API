@@ -369,7 +369,7 @@ export async function supprimerIncident(req: Request, res: Response) {
     `Un modérateur a supprimé l'incident "${incident.type}" que vous avez signalé au ${incident.adresse}.`,
   );
 
-  res.status(204).send();
+  res.json({ message: "Incident supprimé" });
 }
 
 export async function listerDoublons(req: Request, res: Response) {
