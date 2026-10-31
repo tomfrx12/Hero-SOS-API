@@ -20,7 +20,7 @@ export async function envoyerMail(destinataires: string[], sujet: string, texte:
   // Un mail qui ne part pas ne doit pas faire échouer la requête
   try {
     await transporteur.sendMail({
-      from: "Héros SOS <no-reply@heros-sos.fr>",
+      from: "Héros SOS <no-reply@heros-sos.tom-fourneaux.fr>",
       to: destinataires,
       subject: sujet,
       text: texte,
