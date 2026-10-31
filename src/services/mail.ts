@@ -2,10 +2,16 @@ import nodemailer from "nodemailer";
 import type { Role } from "@prisma/client";
 import { prisma } from "./prisma";
 
-// En dev, les mails partent vers Mailpit (http://localhost:8025) au lieu d'une vraie boîte
+// En dev (Mailpit), pas d'auth. En prod (Brevo), SMTP_USER + SMTP_PASSWORD sont définis.
 const transporteur = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
+  ...(process.env.SMTP_USER && {
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
+    },
+  }),
 });
 
 export async function envoyerMail(destinataires: string[], sujet: string, texte: string) {
