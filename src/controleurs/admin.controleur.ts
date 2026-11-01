@@ -202,13 +202,13 @@ export async function modifierUtilisateur(req: Request, res: Response) {
     );
   }
 
-  // Un héros refusé garde son compte mais ne peut pas se connecter
+  // Un héros refusé redevient citoyen pour garder l'accès à son compte
   if (action === "refuser_heros") {
-    await prisma.utilisateur.update({ where: { id }, data: { statut_compte: "Desactive" } });
+    await prisma.utilisateur.update({ where: { id }, data: { role: "Citoyens", statut_compte: "Actif", pseudo: null } });
     await envoyerMail(
       [compte.email],
       "Ta demande de super-héros est refusée",
-      `Bonjour ${appelation},\n\nAprès vérification, ta demande pour devenir super-héros n'a pas été acceptée.`,
+      `Bonjour ${appelation},\n\nAprès vérification, ta demande pour devenir super-héros n'a pas été acceptée. Tu peux toujours te connecter avec ton compte citoyen.`,
     );
   }
 
