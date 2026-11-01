@@ -5,6 +5,14 @@ import { prisma } from "../services/prisma";
 const TMDB_BASE = "https://api.themoviedb.org/3";
 const TMDB_IMAGE = "https://image.tmdb.org/t/p/w500";
 
+const schemaRecherche = z.object({
+  q: z.string("Le paramètre q est requis").trim().min(1, "Le paramètre q est requis").max(100, "La recherche est trop longue"),
+});
+
+const schemaFiltreFilms = z.object({
+  statut: z.enum(["EnAttente", "Valide", "Refuse"], "Statut invalide").optional(),
+});
+
 async function tmdbFetch(path: string) {
   const res = await fetch(`${TMDB_BASE}${path}`, {
     headers: {
@@ -35,14 +43,14 @@ export async function listerFilmsPublics(_req: Request, res: Response) {
 // ── Super-héros ────────────────────────────────────────────────────────────────
 
 export async function rechercherFilm(req: Request, res: Response) {
-  const q = String(req.query.q ?? "").trim();
-  if (!q) {
-    res.status(400).json({ message: "Le paramètre q est requis" });
+  const resultat = schemaRecherche.safeParse(req.query);
+  if (!resultat.success) {
+    res.status(400).json({ message: resultat.error.issues[0].message });
     return;
   }
 
   const data = await tmdbFetch(
-    `/search/movie?query=${encodeURIComponent(q)}&language=fr-FR&page=1`
+    `/search/movie?query=${encodeURIComponent(resultat.data.q)}&language=fr-FR&page=1`
   );
 
   const resultats = (data.results as Array<Record<string, unknown>>)
@@ -140,10 +148,14 @@ export async function retirerFilm(req: Request, res: Response) {
 // ── Admin ──────────────────────────────────────────────────────────────────────
 
 export async function listerFilmsAdmin(req: Request, res: Response) {
-  const statut = req.query.statut as string | undefined;
+  const resultat = schemaFiltreFilms.safeParse(req.query);
+  if (!resultat.success) {
+    res.status(400).json({ message: resultat.error.issues[0].message });
+    return;
+  }
 
   const entrees = await prisma.filmHeros.findMany({
-    where: statut ? { statut: statut as "EnAttente" | "Valide" | "Refuse" } : undefined,
+    where: { statut: resultat.data.statut },
     orderBy: { createdAt: "desc" },
     include: {
       film: true,

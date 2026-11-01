@@ -8,6 +8,10 @@ const schemaEmail = z.object({
   email: z.email("L'adresse email est invalide"),
 });
 
+const schemaDesinscription = z.object({
+  token: z.string("Lien invalide").min(1, "Lien invalide"),
+});
+
 export async function sInscrire(req: Request, res: Response) {
   const resultat = schemaEmail.safeParse(req.body);
   if (!resultat.success) {
@@ -53,11 +57,13 @@ export async function sInscrire(req: Request, res: Response) {
 }
 
 export async function seDesinscrire(req: Request, res: Response) {
-  const token = String(req.query.token ?? "");
-  if (!token) {
-    res.status(400).json({ message: "Lien invalide" });
+  const resultat = schemaDesinscription.safeParse(req.query);
+  if (!resultat.success) {
+    res.status(400).json({ message: resultat.error.issues[0].message });
     return;
   }
+
+  const { token } = resultat.data;
 
   const abonne = await prisma.newsletterAnonymous.findUnique({ where: { token } });
   if (!abonne) {
