@@ -44,6 +44,7 @@ model Utilisateur {
   profilVilain      SuperVilain?
   reinitialisations ReinitialisationMotDePasse[]
   articlesEcrits    Article[]
+  filmsVideotheque  FilmHeros[]
 }
 
 model NewsletterAnonymous {
@@ -189,4 +190,35 @@ enum StatutCompte {
   EnAttente
   Actif
   Desactive
+}
+
+enum StatutFilm {
+  EnAttente
+  Valide
+  Refuse
+}
+
+model Film {
+  id          Int      @id @default(autoincrement())
+  tmdb_id     Int      @unique
+  titre       String
+  annee       String?
+  affiche_url String?
+  description String?
+  createdAt   DateTime @default(now())
+
+  heros FilmHeros[]
+}
+
+model FilmHeros {
+  id        Int        @id @default(autoincrement())
+  statut    StatutFilm @default(EnAttente)
+  createdAt DateTime   @default(now())
+
+  filmId  Int
+  film    Film        @relation(fields: [filmId], references: [id], onDelete: Cascade)
+  herosId Int
+  heros   Utilisateur @relation(fields: [herosId], references: [id], onDelete: Cascade)
+
+  @@unique([filmId, herosId])
 }
