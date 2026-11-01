@@ -172,6 +172,7 @@ export async function modifierUtilisateur(req: Request, res: Response) {
     res.status(404).json({ message: "Utilisateur introuvable" });
     return;
   }
+  const appelation = compte.prenom ?? compte.email;
 
   if (action === "accepter_heros" || action === "refuser_heros") {
     if (compte.role !== "SuperHeros" || compte.statut_compte !== "EnAttente") {
@@ -197,7 +198,7 @@ export async function modifierUtilisateur(req: Request, res: Response) {
     await envoyerMail(
       [compte.email],
       "Ta demande de super-héros est acceptée",
-      `Bonjour ${compte.prenom},\n\nBienvenue parmi les héros ! Tu peux maintenant te connecter sur ${process.env.FRONTEND_URL}/connexion.`,
+      `Bonjour ${appelation},\n\nBienvenue parmi les héros ! Tu peux maintenant te connecter sur ${process.env.FRONTEND_URL}/connexion.`,
     );
   }
 
@@ -207,7 +208,7 @@ export async function modifierUtilisateur(req: Request, res: Response) {
     await envoyerMail(
       [compte.email],
       "Ta demande de super-héros est refusée",
-      `Bonjour ${compte.prenom},\n\nAprès vérification, ta demande pour devenir super-héros n'a pas été acceptée.`,
+      `Bonjour ${appelation},\n\nAprès vérification, ta demande pour devenir super-héros n'a pas été acceptée.`,
     );
   }
 
@@ -235,7 +236,7 @@ export async function modifierUtilisateur(req: Request, res: Response) {
     await envoyerMail(
       [compte.email_en_attente],
       "Ton nouvel email est validé",
-      `Bonjour ${compte.prenom},\n\nTon adresse email est maintenant ${compte.email_en_attente}.`,
+      `Bonjour ${appelation},\n\nTon adresse email est maintenant ${compte.email_en_attente}.`,
     );
   }
 
@@ -244,7 +245,7 @@ export async function modifierUtilisateur(req: Request, res: Response) {
     await envoyerMail(
       [compte.email],
       "Ton changement d'email est refusé",
-      `Bonjour ${compte.prenom},\n\nTa demande pour utiliser l'adresse ${compte.email_en_attente} n'a pas été acceptée.`,
+      `Bonjour ${appelation},\n\nTa demande pour utiliser l'adresse ${compte.email_en_attente} n'a pas été acceptée.`,
     );
   }
 

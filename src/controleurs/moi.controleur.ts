@@ -59,7 +59,7 @@ export async function demanderChangementEmail(req: Request, res: Response) {
   await envoyerMail(
     await emailsDuRole("Administrateurs"),
     "Demande de changement d'email",
-    `${utilisateur.prenom} ${utilisateur.nom} souhaite remplacer ${utilisateur.email} par ${email}.`,
+    `${utilisateur.prenom ?? "Un utilisateur"} souhaite remplacer ${utilisateur.email} par ${email}.`,
   );
 
   res.json({ utilisateur: sansMotDePasse(utilisateur) });

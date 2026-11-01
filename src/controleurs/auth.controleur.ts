@@ -210,7 +210,7 @@ export async function motDePasseOublie(req: Request, res: Response) {
     await envoyerMail(
       [utilisateur.email],
       "Réinitialisation de votre mot de passe",
-      `Bonjour ${utilisateur.prenom},\n\nPour choisir un nouveau mot de passe, ouvrez ce lien (valable 1 heure) :\n${process.env.FRONTEND_URL}/reinitialiser-le-mot-de-passe?token=${token}\n\nSi vous n'avez rien demandé, ignorez ce mail.`,
+      `Bonjour ${utilisateur.prenom ?? utilisateur.email},\n\nPour choisir un nouveau mot de passe, ouvrez ce lien (valable 1 heure) :\n${process.env.FRONTEND_URL}/reinitialiser-le-mot-de-passe?token=${token}\n\nSi vous n'avez rien demandé, ignorez ce mail.`,
     );
   }
 
