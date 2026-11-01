@@ -106,6 +106,36 @@ export async function changerMotDePasse(req: Request, res: Response) {
   res.json({ message: "Ton mot de passe a été modifié" });
 }
 
+const schemaCompletionProfil = z.object({
+  civilite: z.string().min(1, "La civilité est obligatoire"),
+  nom: z.string().min(1, "Le nom est obligatoire"),
+  prenom: z.string().min(1, "Le prénom est obligatoire"),
+  date_de_naissance: z.coerce.date("La date de naissance est invalide"),
+  numero_tel: z.string().min(1, "Le numéro de téléphone est obligatoire"),
+  adresse: z.string().min(1, "L'adresse est obligatoire"),
+  complement_adresse: z.string().optional(),
+  ville: z.string().min(1, "La ville est obligatoire"),
+  code_postal: z.string().min(1, "Le code postal est obligatoire"),
+  pays: z.string().min(1, "Le pays est obligatoire"),
+  latitude: z.number("Choisis ton adresse dans la liste"),
+  longitude: z.number("Choisis ton adresse dans la liste"),
+});
+
+export async function completerProfil(req: Request, res: Response) {
+  const resultat = schemaCompletionProfil.safeParse(req.body);
+  if (!resultat.success) {
+    res.status(400).json({ message: resultat.error.issues[0].message });
+    return;
+  }
+
+  const utilisateur = await prisma.utilisateur.update({
+    where: { id: res.locals.utilisateur.id },
+    data: { ...resultat.data, profil_complet: true },
+  });
+
+  res.json({ utilisateur: sansMotDePasse(utilisateur) });
+}
+
 // Historique des incidents signalés, avec les héros intervenus et la note déjà donnée
 export async function mesIncidents(_req: Request, res: Response) {
   const citoyenId = res.locals.utilisateur.id;

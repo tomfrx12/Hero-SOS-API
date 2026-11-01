@@ -16,21 +16,22 @@ model Utilisateur {
   email              String       @unique
   // Nouvel email demandé depuis le profil, appliqué quand un administrateur le valide
   email_en_attente   String?
-  nom                String
-  prenom             String
+  nom                String?
+  prenom             String?
   pseudo             String?      @unique
-  civilite           String
-  date_de_naissance  DateTime
+  civilite           String?
+  date_de_naissance  DateTime?
   mot_de_passe       String
-  numero_tel         String
+  numero_tel         String?
   photo_profil       String?
-  adresse            String
+  adresse            String?
   complement_adresse String?
-  ville              String
-  code_postal        String
-  pays               String
+  ville              String?
+  code_postal        String?
+  pays               String?
   latitude           Float?
   longitude          Float?
+  profil_complet     Boolean      @default(false)
   newsletter         Boolean      @default(false)
   role               Role         @default(Citoyens)
   statut_compte      StatutCompte @default(EnAttente)
