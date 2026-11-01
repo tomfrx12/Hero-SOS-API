@@ -43,6 +43,8 @@ model Utilisateur {
   notesDonnees      Note[]
   profilVilain      SuperVilain?
   reinitialisations ReinitialisationMotDePasse[]
+  articlesEcrits    Article[]
+  filmsVideotheque  FilmHeros[]
 }
 
 model NewsletterAnonymous {
@@ -164,6 +166,19 @@ enum Urgence {
   Basse
 }
 
+model Article {
+  id           Int      @id @default(autoincrement())
+  titre        String
+  contenu_html String
+  image        String?
+  publie       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  auteurId Int
+  auteur   Utilisateur @relation(fields: [auteurId], references: [id])
+}
+
 enum Role {
   Citoyens
   SuperHeros
@@ -175,4 +190,35 @@ enum StatutCompte {
   EnAttente
   Actif
   Desactive
+}
+
+enum StatutFilm {
+  EnAttente
+  Valide
+  Refuse
+}
+
+model Film {
+  id          Int      @id @default(autoincrement())
+  tmdb_id     Int      @unique
+  titre       String
+  annee       String?
+  affiche_url String?
+  description String?
+  createdAt   DateTime @default(now())
+
+  heros FilmHeros[]
+}
+
+model FilmHeros {
+  id        Int        @id @default(autoincrement())
+  statut    StatutFilm @default(EnAttente)
+  createdAt DateTime   @default(now())
+
+  filmId  Int
+  film    Film        @relation(fields: [filmId], references: [id], onDelete: Cascade)
+  herosId Int
+  heros   Utilisateur @relation(fields: [herosId], references: [id], onDelete: Cascade)
+
+  @@unique([filmId, herosId])
 }
