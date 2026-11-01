@@ -285,6 +285,53 @@ export async function mesInterventions(_req: Request, res: Response) {
   res.json({ interventions });
 }
 
+const schemaCandidatureHeros = z.object({
+  pseudo: z.string().min(1, "Le pseudo est obligatoire"),
+});
+
+export async function candidatureHeros(req: Request, res: Response) {
+  const resultat = schemaCandidatureHeros.safeParse(req.body);
+  if (!resultat.success) {
+    res.status(400).json({ message: resultat.error.issues[0].message });
+    return;
+  }
+
+  const userId = res.locals.utilisateur.id;
+  const utilisateur = await prisma.utilisateur.findUnique({ where: { id: userId } });
+
+  if (!utilisateur || utilisateur.role !== "Citoyens") {
+    res.status(400).json({ message: "Seuls les citoyens peuvent envoyer une candidature" });
+    return;
+  }
+
+  const pseudoPris = await prisma.utilisateur.findUnique({ where: { pseudo: resultat.data.pseudo } });
+  if (pseudoPris) {
+    res.status(409).json({ message: "Ce pseudo est déjà utilisé" });
+    return;
+  }
+
+  await prisma.utilisateur.update({
+    where: { id: userId },
+    data: { pseudo: resultat.data.pseudo, role: "SuperHeros", statut_compte: "EnAttente" },
+  });
+
+  const appelation = utilisateur.prenom ?? utilisateur.email;
+
+  await envoyerMail(
+    [utilisateur.email],
+    "Ta candidature super-héros a été envoyée",
+    `Bonjour ${appelation},\n\nTa candidature pour rejoindre Héros SOS en tant que super-héros avec le pseudo "${resultat.data.pseudo}" a bien été reçue.\n\nUn modérateur va l'examiner prochainement. Tu recevras un mail dès qu'une décision aura été prise.\n\nÀ bientôt !`,
+  );
+
+  await envoyerMail(
+    await emailsDuRole("Administrateurs"),
+    "Nouvelle candidature super-héros",
+    `${appelation} (${utilisateur.email}) souhaite devenir super-héros avec le pseudo "${resultat.data.pseudo}".`,
+  );
+
+  res.json({ message: "Ta candidature a été envoyée" });
+}
+
 // Les avis laissés par les citoyens sur les interventions du héros connecté
 export async function maReputation(_req: Request, res: Response) {
   const notes = await prisma.note.findMany({
