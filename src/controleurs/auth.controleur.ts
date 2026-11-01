@@ -10,19 +10,9 @@ import { emailsDuRole, envoyerMail } from "../services/mail";
 const schemaInscription = z.object({
   role: z.enum(["Citoyens", "SuperHeros"]),
   pseudo: z.string().optional(),
-  civilite: z.string().min(1, "La civilité est obligatoire"),
-  nom: z.string().min(1, "Le nom est obligatoire"),
-  prenom: z.string().min(1, "Le prénom est obligatoire"),
-  date_de_naissance: z.coerce.date("La date de naissance est invalide"),
+  nom: z.string().optional(),
+  prenom: z.string().optional(),
   email: z.email("L'adresse email est invalide"),
-  numero_tel: z.string().min(1, "Le numéro de téléphone est obligatoire"),
-  adresse: z.string().min(1, "L'adresse est obligatoire"),
-  complement_adresse: z.string().optional(),
-  ville: z.string().min(1, "La ville est obligatoire"),
-  code_postal: z.string().min(1, "Le code postal est obligatoire"),
-  pays: z.string().min(1, "Le pays est obligatoire"),
-  latitude: z.number("Choisis ton adresse dans la liste"),
-  longitude: z.number("Choisis ton adresse dans la liste"),
   mot_de_passe: z.string().min(8, "Le mot de passe doit faire au moins 8 caractères"),
 });
 
@@ -63,12 +53,15 @@ export async function inscription(req: Request, res: Response) {
     }
   }
 
+  const estHeros = donnees.role === "SuperHeros";
+  const appelation = donnees.prenom ?? donnees.pseudo ?? "toi";
+
   const utilisateur = await prisma.utilisateur.create({
     data: {
       ...donnees,
       mot_de_passe: await bcrypt.hash(donnees.mot_de_passe, 10),
-      statut_compte: donnees.role === "SuperHeros" ? "EnAttente" : "Actif",
-      profil_complet: true,
+      statut_compte: estHeros ? "EnAttente" : "Actif",
+      profil_complet: false,
     },
   });
 
@@ -80,27 +73,35 @@ export async function inscription(req: Request, res: Response) {
     utilisateur.newsletter = true;
   }
 
-  if (utilisateur.role === "Citoyens") {
+  if (!estHeros) {
     await envoyerMail(
       [utilisateur.email],
       "Bienvenue sur Héros SOS",
-      `Bonjour ${utilisateur.prenom},\n\nTon compte a bien été créé. Tu peux maintenant te connecter sur ${process.env.FRONTEND_URL}/connexion.\n\nÀ bientôt sur Héros SOS !`,
+      `Bonjour ${appelation},\n\nTon compte a bien été créé. Tu peux maintenant signaler des incidents.\n\nPense à compléter ton profil pour accéder à toutes les fonctionnalités : ${process.env.FRONTEND_URL}/profil/completer\n\nÀ bientôt sur Héros SOS !`,
     );
   } else {
     await envoyerMail(
       [utilisateur.email],
       "Ta demande de super-héros est en cours d'examen",
-      `Bonjour ${utilisateur.prenom},\n\nTa demande pour rejoindre Héros SOS en tant que super-héros a bien été reçue. Un modérateur va l'examiner prochainement.\n\nTu recevras un mail dès qu'une décision aura été prise.`,
+      `Bonjour ${appelation},\n\nTa demande pour rejoindre Héros SOS en tant que super-héros a bien été reçue. Un modérateur va l'examiner prochainement.\n\nTu recevras un mail dès qu'une décision aura été prise.`,
     );
   }
 
+  const identite = [donnees.prenom, donnees.nom].filter(Boolean).join(" ") || donnees.pseudo || donnees.email;
   await envoyerMail(
     await emailsDuRole("Administrateurs"),
     "Nouvel inscrit sur Héros SOS",
-    `${utilisateur.prenom} ${utilisateur.nom} (${utilisateur.email}) vient de s'inscrire en tant que ${utilisateur.role}.`,
+    `${identite} (${utilisateur.email}) vient de s'inscrire en tant que ${utilisateur.role}.`,
   );
 
-  res.status(201).json({ utilisateur: sansMotDePasse(utilisateur) });
+  if (estHeros) {
+    res.status(201).json({ utilisateur: sansMotDePasse(utilisateur) });
+    return;
+  }
+
+  // Pour les citoyens : token immédiat pour ne pas forcer une reconnexion
+  const token = creerToken({ id: utilisateur.id, role: utilisateur.role });
+  res.status(201).json({ token, utilisateur: sansMotDePasse(utilisateur) });
 }
 
 const schemaInscriptionRapide = z.object({

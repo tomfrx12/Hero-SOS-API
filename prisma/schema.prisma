@@ -42,7 +42,6 @@ model Utilisateur {
   incidentsSignales Incident[]     @relation("IncidentsSignales")
   interventions     Intervention[]
   notesDonnees      Note[]
-  profilVilain      SuperVilain?
   reinitialisations ReinitialisationMotDePasse[]
   articlesEcrits    Article[]
   filmsVideotheque  FilmHeros[]
@@ -76,9 +75,6 @@ model SuperVilain {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  utilisateurId Int?         @unique
-  utilisateur   Utilisateur? @relation(fields: [utilisateurId], references: [id])
 
   incidents IncidentVilain[]
 }
@@ -183,7 +179,6 @@ model Article {
 enum Role {
   Citoyens
   SuperHeros
-  SuperVillains
   Administrateurs
 }
 
