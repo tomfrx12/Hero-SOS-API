@@ -68,6 +68,7 @@ export async function inscription(req: Request, res: Response) {
       ...donnees,
       mot_de_passe: await bcrypt.hash(donnees.mot_de_passe, 10),
       statut_compte: donnees.role === "SuperHeros" ? "EnAttente" : "Actif",
+      profil_complet: true,
     },
   });
 
@@ -100,6 +101,44 @@ export async function inscription(req: Request, res: Response) {
   );
 
   res.status(201).json({ utilisateur: sansMotDePasse(utilisateur) });
+}
+
+const schemaInscriptionRapide = z.object({
+  email: z.email("L'adresse email est invalide"),
+  mot_de_passe: z.string().min(8, "Le mot de passe doit faire au moins 8 caractères"),
+});
+
+export async function inscriptionRapide(req: Request, res: Response) {
+  const resultat = schemaInscriptionRapide.safeParse(req.body);
+  if (!resultat.success) {
+    res.status(400).json({ message: resultat.error.issues[0].message });
+    return;
+  }
+  const { email, mot_de_passe } = resultat.data;
+
+  const emailUtilise = await prisma.utilisateur.findUnique({ where: { email } });
+  if (emailUtilise) {
+    res.status(409).json({ message: "Cet email est déjà utilisé" });
+    return;
+  }
+
+  const utilisateur = await prisma.utilisateur.create({
+    data: {
+      email,
+      mot_de_passe: await bcrypt.hash(mot_de_passe, 10),
+      statut_compte: "Actif",
+      profil_complet: false,
+    },
+  });
+
+  await envoyerMail(
+    [utilisateur.email],
+    "Bienvenue sur Héros SOS",
+    `Bienvenue sur Héros SOS !\n\nTon compte a bien été créé. Tu peux maintenant signaler des incidents.\n\nPense à compléter ton profil pour accéder à toutes les fonctionnalités : ${process.env.FRONTEND_URL}/profil/completer\n\nÀ bientôt !`,
+  );
+
+  const token = creerToken({ id: utilisateur.id, role: utilisateur.role });
+  res.status(201).json({ token, utilisateur: sansMotDePasse(utilisateur) });
 }
 
 export async function connexion(req: Request, res: Response) {

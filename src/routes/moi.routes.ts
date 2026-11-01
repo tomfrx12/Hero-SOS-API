@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { me } from "../controleurs/auth.controleur";
-import { changerMotDePasse, changerPhoto, demanderChangementEmail, maReputation, mesIncidents, mesInterventions, mesStatistiques, modifierProfil, noterHeros, repondreAvis } from "../controleurs/moi.controleur";
+import { changerMotDePasse, changerPhoto, completerProfil, demanderChangementEmail, maReputation, mesIncidents, mesInterventions, mesStatistiques, modifierProfil, noterHeros, repondreAvis } from "../controleurs/moi.controleur";
 import { authentifier, autoriser } from "../middlewares/authentifier";
 import { uploadPhoto } from "../services/upload";
 
@@ -11,6 +11,7 @@ router.use(authentifier);
 
 router.get("/", me);
 router.patch("/", modifierProfil);
+router.patch("/profil-complet", completerProfil);
 router.patch("/email", demanderChangementEmail);
 router.patch("/mot-de-passe", changerMotDePasse);
 router.post("/photo", uploadPhoto.single("photo"), changerPhoto);
