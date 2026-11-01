@@ -73,6 +73,7 @@ model SuperVilain {
   specialite  String
   secteur     String
   description String?
+  photo       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

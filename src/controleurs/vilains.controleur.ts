@@ -44,9 +44,12 @@ export async function listeVilains(_req: Request, res: Response) {
     select: {
       id: true,
       pseudo: true,
+      nom: true,
+      prenom: true,
       specialite: true,
       secteur: true,
       description: true,
+      photo: true,
       // Les incidents supprimés ne comptent pas dans le palmarès
       incidents: {
         where: { incident: { status: { not: "Supprime" } } },
@@ -148,4 +151,30 @@ export async function supprimerVilain(req: Request, res: Response) {
   await prisma.superVilain.delete({ where: { id } });
 
   res.status(204).send();
+}
+
+export async function uploadPhotoVilain(req: Request, res: Response) {
+  const id = parseInt(req.params.id as string);
+  if (isNaN(id)) {
+    res.status(400).json({ message: "Identifiant invalide" });
+    return;
+  }
+
+  if (!req.file) {
+    res.status(400).json({ message: "Choisis une image (2 Mo maximum)" });
+    return;
+  }
+
+  const existant = await prisma.superVilain.findUnique({ where: { id } });
+  if (!existant) {
+    res.status(404).json({ message: "Vilain introuvable" });
+    return;
+  }
+
+  const vilain = await prisma.superVilain.update({
+    where: { id },
+    data: { photo: `/uploads/${req.file.filename}` },
+  });
+
+  res.json({ vilain });
 }
