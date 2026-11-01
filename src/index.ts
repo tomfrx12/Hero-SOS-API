@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import express, { type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
+import helmet from "helmet";
 import multer from "multer";
 import authRoutes from "./routes/auth.routes";
 import incidentRoutes from "./routes/incident.routes";
@@ -13,10 +14,16 @@ import adminRoutes from "./routes/admin.routes";
 import newsletterRoutes from "./routes/newsletter.routes";
 import articlesRoutes from "./routes/articles.routes";
 import videothequRoutes from "./routes/videotheque.routes";
+import { limiteurGeneral } from "./middlewares/limiteurs";
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
 
+// En production l'API est derrière Traefik : sans ça, tout le monde aurait la même IP pour le rate limit
+app.set("trust proxy", 1);
+
+// "cross-origin" pour que le front, sur un autre domaine, puisse afficher les images de /uploads
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({ origin: process.env.FRONTEND_URL }));
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
@@ -24,6 +31,8 @@ app.use("/uploads", express.static("uploads"));
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+app.use(limiteurGeneral);
 
 app.use("/auth", authRoutes);
 app.use("/incidents", incidentRoutes);
