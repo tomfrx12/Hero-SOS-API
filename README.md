@@ -23,8 +23,9 @@ Ce projet est l'API REST du projet Hero SOS, développée avec Node.js, Express 
 4. [Structure du projet](#structure-du-projet)
 5. [Endpoints](#endpoints)
 6. [Rôles et accès](#rôles-et-accès)
-7. [Auteurs](#auteurs)
-8. [Licence](#licence)
+7. [Sécurité](#sécurité)
+8. [Auteurs](#auteurs)
+9. [Licence](#licence)
 
 ## Technologies utilisées
 
@@ -34,7 +35,8 @@ Ce projet est l'API REST du projet Hero SOS, développée avec Node.js, Express 
 - **[PostgreSQL 16](https://www.postgresql.org/)** : base de données
 - **[JSON Web Token](https://github.com/auth0/node-jsonwebtoken)** + **[bcrypt](https://github.com/kelektiv/node.bcrypt.js)** : authentification et hachage des mots de passe
 - **[Zod](https://zod.dev/)** : validation des données reçues
-- **[Multer](https://github.com/expressjs/multer)** : envoi des photos de profil et des images des articles
+- **[Helmet](https://helmetjs.github.io/)** + **[express-rate-limit](https://express-rate-limit.mintlify.app/)** : en-têtes de sécurité et limitation du nombre de requêtes
+- **[Multer](https://github.com/expressjs/multer)** : envoi des photos (profils, vilains) et des images des articles
 - **[API TMDB](https://developer.themoviedb.org/)** : recherche des films de la vidéothèque (titre, année, affiche, description)
 - **[sanitize-html](https://github.com/apostrophecms/sanitize-html)** : nettoyage du HTML des articles (protection contre les failles XSS)
 - **[Nodemailer](https://nodemailer.com/)** : envoi des mails ([Mailpit](https://mailpit.axllent.org/) en développement, [Brevo](https://www.brevo.com/) en production)
@@ -184,11 +186,11 @@ Les migrations sont appliquées automatiquement par le service `migrate` avant l
 │   └── schema.prisma        # Modèles de la base
 ├── src/
 │   ├── controleurs/         # Traitement des requêtes
-│   ├── middlewares/         # Authentification et vérification des rôles
+│   ├── middlewares/         # Authentification, vérification des rôles et limites de requêtes
 │   ├── routes/              # Déclaration des routes
 │   ├── services/            # Prisma, tokens, mails, envoi de fichiers, doublons
 │   └── index.ts             # Point d'entrée
-├── uploads/                 # Photos de profil et images des articles (servies sur /uploads)
+├── uploads/                 # Photos de profil, photos des vilains et images des articles (servies sur /uploads)
 ├── docker-compose.yml       # Développement (base, Mailpit, API)
 ├── docker-compose.prod.yml  # Production (base, migrations, API, front, Traefik)
 ├── Dockerfile               # Image de production
@@ -205,13 +207,14 @@ Les routes protégées attendent l'en-tête `Authorization: Bearer <token>`, obt
 | Méthode | Route               | Accès  | Description                          |
 | ------- | ------------------- | ------ | ------------------------------------ |
 | GET     | `/health`           | Public | Vérifie que l'API est opérationnelle |
-| GET     | `/uploads/:fichier` | Public | Photos de profil et images des articles |
+| GET     | `/uploads/:fichier` | Public | Photos de profil, photos des vilains et images des articles |
 
 ### Authentification
 
 | Méthode | Route                              | Accès    | Description                                                                  |
 | ------- | ---------------------------------- | -------- | ---------------------------------------------------------------------------- |
 | POST    | `/auth/inscription`                | Public   | Crée un compte citoyen (actif) ou super-héros (en attente de validation)     |
+| POST    | `/auth/inscription-rapide`         | Public   | Crée un compte citoyen avec `{ email, mot_de_passe }`, profil à compléter    |
 | POST    | `/auth/connexion`                  | Public   | `{ identifiant, mot_de_passe }` → `{ token, utilisateur }` (email ou pseudo) |
 | GET     | `/auth/me`                         | Connecté | Utilisateur connecté                                                         |
 | POST    | `/auth/mot-de-passe-oublie`        | Public   | Envoie un lien de réinitialisation par mail (valable 1 heure)                |
@@ -235,13 +238,17 @@ Les routes protégées attendent l'en-tête `Authorization: Bearer <token>`, obt
 
 ### Super-héros, super-vilains et statistiques
 
-| Méthode | Route             | Accès           | Description                                                                         |
-| ------- | ----------------- | --------------- | ----------------------------------------------------------------------------------- |
-| GET     | `/heros`          | Public          | Super-héros actifs avec note moyenne et missions réussies                           |
-| GET     | `/vilains`        | Public          | Super-vilains avec nombre d'incidents et d'arrestations                             |
-| POST    | `/vilains`        | Administrateurs | Crée un super-vilain `{ pseudo, specialite, secteur, nom?, prenom?, description? }` |
-| GET     | `/stats`          | Public          | Héros actifs, incidents signalés, taux de réussite, temps moyen                     |
-| GET     | `/stats/globales` | SuperHeros      | Statistiques globales de l'espace super-héros                                       |
+| Méthode | Route                | Accès                       | Description                                                                         |
+| ------- | -------------------- | --------------------------- | ----------------------------------------------------------------------------------- |
+| GET     | `/heros`             | Public                      | Super-héros actifs avec note moyenne et missions réussies                           |
+| GET     | `/vilains`           | Public                      | Super-vilains avec nombre d'incidents et d'arrestations                             |
+| GET     | `/vilains/:id`       | Public                      | Détail d'un super-vilain et de ses incidents                                        |
+| POST    | `/vilains`           | SuperHeros, Administrateurs | Crée un super-vilain `{ pseudo, specialite, secteur, nom?, prenom?, description? }` |
+| PUT     | `/vilains/:id`       | SuperHeros, Administrateurs | Modifie un super-vilain                                                             |
+| DELETE  | `/vilains/:id`       | SuperHeros, Administrateurs | Supprime un super-vilain                                                            |
+| POST    | `/vilains/:id/photo` | SuperHeros, Administrateurs | Change la photo d'un super-vilain (image, 2 Mo maximum)                             |
+| GET     | `/stats`             | Public                      | Héros actifs, incidents signalés, taux de réussite, temps moyen                     |
+| GET     | `/stats/globales`    | SuperHeros                  | Statistiques globales de l'espace super-héros                                       |
 
 ### Compte de l'utilisateur connecté
 
@@ -249,6 +256,8 @@ Les routes protégées attendent l'en-tête `Authorization: Bearer <token>`, obt
 | ------- | ------------------------ | ------------------------- | ---------------------------------------------------- |
 | GET     | `/moi`                   | Connecté                  | Profil de l'utilisateur connecté                     |
 | PATCH   | `/moi`                   | Connecté                  | Modifie le profil                                    |
+| PATCH   | `/moi/profil-complet`    | Connecté                  | Complète le profil après une inscription rapide      |
+| POST    | `/moi/candidature-heros` | Citoyens                  | Demande à devenir super-héros `{ pseudo }`           |
 | PATCH   | `/moi/email`             | Connecté                  | Demande un changement d'adresse email                |
 | PATCH   | `/moi/mot-de-passe`      | Connecté                  | Change le mot de passe                               |
 | POST    | `/moi/photo`             | Connecté                  | Change la photo de profil (image, 2 Mo maximum)      |
@@ -261,10 +270,10 @@ Les routes protégées attendent l'en-tête `Authorization: Bearer <token>`, obt
 
 ### Newsletter
 
-| Méthode | Route         | Accès  | Description                 |
-| ------- | ------------- | ------ | --------------------------- |
-| POST    | `/newsletter` | Public | Inscription à la newsletter |
-| DELETE  | `/newsletter` | Public | Désinscription              |
+| Méthode | Route                 | Accès  | Description                                    |
+| ------- | --------------------- | ------ | ---------------------------------------------- |
+| POST    | `/newsletter`         | Public | Inscription à la newsletter `{ email }`        |
+| DELETE  | `/newsletter?token=…` | Public | Désinscription d'un abonné sans compte         |
 
 ### Blog
 
@@ -308,7 +317,22 @@ Les super-héros ajoutent des films trouvés sur TMDB. Un film n'apparaît dans 
 
 ## Rôles et accès
 
-L'API gère quatre rôles : **Citoyens**, **SuperHeros**, **SuperVillains** et **Administrateurs**. Un compte peut être **EnAttente** (super-héros pas encore validé), **Actif** ou **Desactive**. Le token JWT est valable 7 jours. Sans token valide, les routes protégées répondent `401`, et avec un rôle non autorisé `403`.
+L'API gère trois rôles : **Citoyens**, **SuperHeros** et **Administrateurs**. Les super-vilains n'ont pas de compte : ce sont des fiches gérées par les super-héros et les administrateurs. Un compte peut être **EnAttente** (super-héros pas encore validé), **Actif** ou **Desactive**. Le token JWT est valable 7 jours. Sans token valide, les routes protégées répondent `401`, et avec un rôle non autorisé `403`.
+
+Un citoyen devient super-héros avec `POST /moi/candidature-heros` : il ne peut plus se connecter jusqu'à la décision d'un administrateur. S'il est refusé, il redevient citoyen et garde son compte.
+
+## Sécurité
+
+- **En-têtes** : Helmet ajoute les en-têtes de sécurité à toutes les réponses. `/uploads` reste lisible depuis le domaine du front (`crossOriginResourcePolicy: cross-origin`).
+- **Limites de requêtes** (par adresse IP, sur 15 minutes, réponse `429` en JSON) :
+
+| Routes                                                                                     | Limite        |
+| ------------------------------------------------------------------------------------------ | ------------- |
+| Toutes les routes, sauf `/health` et `/uploads`                                            | 500 requêtes  |
+| `POST /auth/*` (inscriptions, connexion, mot de passe oublié et réinitialisation), `POST /newsletter` | 20 requêtes   |
+
+- **Proxy** : `trust proxy` est réglé sur `1` pour que l'API lise la vraie adresse IP derrière Traefik. Sans ça, tous les visiteurs compteraient comme une seule adresse.
+- **Validation** : tous les `req.body` et `req.query` passent par un schéma Zod avant d'être utilisés.
 
 ## Auteurs
 
